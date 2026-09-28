@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: carnaval
+  datasource:
+    url: jdbc:postgresql://localhost:5432/carnaval
+    username: carnaval
+    password: carnaval
+  sql:
+    init:
+      mode: always      # ejecuta schema.sql y data.sql al arrancar (rama 00)
+  jpa:
+    open-in-view: false

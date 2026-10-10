@@ -1,0 +1,784 @@
+{
+  "info": {
+    "name": "Carnaval Tickets · Módulo 2",
+    "description": "Peticiones del repositorio Carnaval Tickets, una carpeta por etapa. Selecciona el entorno 'Carnaval local'. Cada petición trae pruebas (pestaña Tests) que dicen qué se espera.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00-barro · Sesión 1",
+      "description": "Rama 00-barro. Todo pasa por PedidoController. Fíjate: los errores responden 200 con {\"error\": ...}. Es parte del barro.",
+      "item": [
+        {
+          "name": "Listar localidades",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/localidades"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Trae las 3 localidades del Carnaval\", () => pm.expect(pm.response.json().length).to.eql(3));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comprar 2 boletas (estudiante)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/pedidos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documento\": \"1085\",\n  \"localidadId\": \"palco-6ene\",\n  \"cantidad\": 2,\n  \"tarjeta\": \"4111\",\n  \"estudiante\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Total con 20% de descuento: 192000\", () => pm.expect(pm.response.json().total).to.eql(192000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comprar 7 boletas (regla del 6)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/pedidos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documento\": \"1085\",\n  \"localidadId\": \"palco-6ene\",\n  \"cantidad\": 7,\n  \"tarjeta\": \"4111\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// En el barro, un error de negocio responde 200. El cliente tiene que leer el cuerpo para saber que falló.",
+                  "pm.test(\"Responde 200 aunque sea un error (defecto del barro)\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"El cuerpo dice el error\", () => pm.expect(pm.response.json().error).to.eql(\"maximo 6 boletas\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tarjeta rechazada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/pedidos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documento\": \"1085\",\n  \"localidadId\": \"palco-6ene\",\n  \"cantidad\": 1,\n  \"tarjeta\": \"5111\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Pago rechazado\", () => pm.expect(pm.response.json().error).to.eql(\"pago rechazado\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pasarela falsa (vive dentro del monolito)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/pasarela-falsa?tarjeta=4111&valor=120000",
+            "description": "Muestra en clase que la 'pasarela' es otro endpoint de la misma aplicación: acoplamiento de despliegue."
+          }
+        }
+      ]
+    },
+    {
+      "name": "01-modulos · Sesión 1",
+      "description": "Rama 01-modulos. Mismo sistema en módulos. Ahora los errores responden 422.",
+      "item": [
+        {
+          "name": "Comprar 2 boletas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/pedidos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documento\": \"1085\",\n  \"localidadId\": \"palco-6ene\",\n  \"cantidad\": 2,\n  \"estudiante\": true,\n  \"tarjeta\": \"4111\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Trae pedidoId\", () => pm.expect(pm.response.json().pedidoId).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comprar 7 boletas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/pedidos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documento\": \"1085\",\n  \"localidadId\": \"palco-6ene\",\n  \"cantidad\": 7,\n  \"estudiante\": false,\n  \"tarjeta\": \"4111\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 a 04 · Hexagonal · Sesión 2",
+      "description": "Ramas 03-adaptadores y 04-archunit. Las mismas peticiones deben dar lo mismo con el perfil memoria y con el perfil postgres: esa es la demostración.",
+      "item": [
+        {
+          "name": "Reservar 2 boletas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reservas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentoComprador\": \"1085\",\n  \"localidadId\": \"palco-6ene\",\n  \"cantidad\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "const id = pm.response.json().reservaId;",
+                  "pm.test(\"Trae reservaId\", () => pm.expect(id).to.be.a(\"string\"));",
+                  "pm.collectionVariables.set(\"reservaId\", id); // la usa \"Pagar la reserva\""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reservar 7 boletas (regla del 6)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reservas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentoComprador\": \"1085\",\n  \"localidadId\": \"palco-6ene\",\n  \"cantidad\": 7\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Mensaje del dominio\", () => pm.expect(pm.response.json().error).to.eql(\"Se pueden reservar entre 1 y 6 boletas\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Localidad inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reservas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentoComprador\": \"1085\",\n  \"localidadId\": \"no-existe\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Campo mal nombrado (contrato)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reservas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documento\": \"1085\",\n  \"localidadId\": \"palco-6ene\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "El record espera documentoComprador. Sirve para hablar del contrato público del adaptador de entrada."
+          }
+        },
+        {
+          "name": "Pagar la reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reservas/{{reservaId}}/pago",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valorEnPesos\": 240000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Quedó pagada\", () => pm.expect(pm.response.json().pagada).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pagar dos veces la misma reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reservas/{{reservaId}}/pago",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valorEnPesos\": 240000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Pregunta para la clase: PagarReservaService llama a la pasarela ANTES de que confirmarPago detecte que ya estaba pagada. ¿Se cobró dos veces? En memoria sí (pasarela falsa). Con Pagos remoto (Sesión 3) la llave de idempotencia lo evita."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"La segunda vez la regla lo impide (422)\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05-pagos-servicio · Sesión 3",
+      "description": "Rama 05. Pagos corre aparte en el puerto 8081. Ejecuta primero 'Reservar 2 boletas' de la carpeta anterior.",
+      "item": [
+        {
+          "name": "Cobrar directo en Pagos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{llave}}"
+              }
+            ],
+            "url": "{{pagosUrl}}/cobros",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": \"{{llave}}\",\n  \"documento\": \"1085\",\n  \"valorEnPesos\": 240000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"referencia\", pm.response.json().referencia);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Repetir el mismo cobro (idempotencia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{llave}}"
+              }
+            ],
+            "url": "{{pagosUrl}}/cobros",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": \"{{llave}}\",\n  \"documento\": \"1085\",\n  \"valorEnPesos\": 240000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Misma referencia: no cobró dos veces\", () =>",
+                  "  pm.expect(pm.response.json().referencia).to.eql(pm.collectionVariables.get(\"referencia\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cobro sin llave",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{pagosUrl}}/cobros",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": \"r-sin-llave\",\n  \"documento\": \"1085\",\n  \"valorEnPesos\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400: la llave es parte del contrato\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pagar reserva a través del monolito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reservas/{{reservaId}}/pago",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valorEnPesos\": 240000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Con perfil pagos-remoto. Con DEMORA_MS=5000 y timeout de 2 s debe responder 503 a los 2 segundos."
+          }
+        }
+      ]
+    },
+    {
+      "name": "06-eventos · Sesión 4",
+      "description": "Rama 06. Usa la API HTTP de la consola de RabbitMQ (usuario guest/guest) para publicar mensajes a mano en la cola notificaciones.pedidos. Mira la consola de notificaciones-servicio mientras envías.",
+      "item": [
+        {
+          "name": "Pagar (publica PedidoConfirmado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reservas/{{reservaId}}/pago",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valorEnPesos\": 240000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Con perfiles postgres,pagos-remoto,rabbit. Luego revisa las colas."
+          }
+        },
+        {
+          "name": "Ver estado de las colas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{rabbitUrl}}/api/queues",
+            "description": "Abre la consola de Postman (View → Show Postman Console) para ver el resumen.",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "guest",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "guest",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const colas = pm.response.json().map(c => `${c.name}: listos=${c.messages_ready} consumidores=${c.consumers}`);",
+                  "console.log(colas.join(\"\\n\"));",
+                  "pm.test(\"Hay colas declaradas\", () => pm.expect(colas.length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Experimento 3 · Evento (enviar dos veces)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rabbitUrl}}/api/exchanges/%2F/amq.default/publish",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\"\n  },\n  \"routing_key\": \"notificaciones.pedidos\",\n  \"payload\": \"{\\\"eventId\\\": \\\"e-1\\\", \\\"correlationId\\\": \\\"c-1\\\", \\\"reservaId\\\": \\\"r-1\\\", \\\"documento\\\": \\\"1085\\\", \\\"cantidad\\\": 2}\",\n  \"payload_encoding\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Envíalo dos veces: debe aparecer un CORREO y luego DUPLICADO ignorado e-1.",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "guest",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "guest",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"RabbitMQ lo enrutó a una cola\", () => pm.expect(pm.response.json().routed).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Experimento 4 · Veneno (documento vacío)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rabbitUrl}}/api/exchanges/%2F/amq.default/publish",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\"\n  },\n  \"routing_key\": \"notificaciones.pedidos\",\n  \"payload\": \"{\\\"eventId\\\": \\\"e-veneno\\\", \\\"correlationId\\\": \\\"c-1\\\", \\\"reservaId\\\": \\\"r-1\\\", \\\"documento\\\": \\\"\\\", \\\"cantidad\\\": 2}\",\n  \"payload_encoding\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tres reintentos y termina en notificaciones.muertos.",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "guest",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "guest",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"RabbitMQ lo enrutó a una cola\", () => pm.expect(pm.response.json().routed).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Experimento 5 · Evento con campo nuevo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{rabbitUrl}}/api/exchanges/%2F/amq.default/publish",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\"\n  },\n  \"routing_key\": \"notificaciones.pedidos\",\n  \"payload\": \"{\\\"eventId\\\": \\\"e-5\\\", \\\"correlationId\\\": \\\"c-1\\\", \\\"reservaId\\\": \\\"r-1\\\", \\\"documento\\\": \\\"1085\\\", \\\"cantidad\\\": 2, \\\"localidadId\\\": \\\"palco-6ene\\\"}\",\n  \"payload_encoding\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "El consumidor ignora el campo que no conoce: lector tolerante.",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "guest",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "guest",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"RabbitMQ lo enrutó a una cola\", () => pm.expect(pm.response.json().routed).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "reservaId",
+      "value": ""
+    },
+    {
+      "key": "referencia",
+      "value": ""
+    },
+    {
+      "key": "llave",
+      "value": "r-demo-1"
+    }
+  ]
+}

@@ -25,4 +25,6 @@ public class Localidad {
 
     public String id() { return id; }
     public String nombre() { return nombre; }
+    public int capacidad() { return capacidad; }
+    public int vendidas() { return vendidas; }
 }

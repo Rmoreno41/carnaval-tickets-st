@@ -47,6 +47,17 @@ public class Reserva {
         estado = EstadoReserva.PAGADA;
     }
 
+     /** Solo para adaptadores que leen de una base de datos: no aplica 
+        reglas, los datos ya se validaron al crear. */
+    public static Reserva reconstruir(String id, String documento, String localidadId, int cantidad,
+                                    Instant creadaEn, EstadoReserva estado) 
+    {
+        Reserva r = new Reserva(id, documento, localidadId, cantidad, creadaEn);
+        r.estado = estado;
+        return r;
+    }
+    public Instant creadaEn() { return creadaEn;} 
+
     
 
     public String id() {

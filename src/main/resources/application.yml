@@ -1,12 +1,33 @@
 spring:
   application:
     name: carnaval
+  profiles:
+    default: memoria          # si nadie pide otro perfil, se usa memoria
+  jpa:
+    open-in-view: false
+---
+spring:
+  config:
+    activate:
+      on-profile: memoria
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
   datasource:
     url: jdbc:postgresql://localhost:5432/carnaval
     username: carnaval
     password: carnaval
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true   # data.sql corre después de crear las tablas
   sql:
     init:
-      mode: always      # ejecuta schema.sql y data.sql al arrancar (rama 00)
-  jpa:
-    open-in-view: false
+      mode: always

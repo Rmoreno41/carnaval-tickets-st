@@ -1,0 +1,151 @@
+{
+  "info": {
+    "name": "Carnaval Tickets · Rama 05 · Pagos como microservicio",
+    "description": "Antes de ejecutar: levanta Pagos (pagos-servicio, puerto 8081) y el monolito con el perfil memoria,pagos-remoto (puerto 8080). Ejecuta las peticiones en orden, o toda la carpeta con Run.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "monolito", "value": "http://localhost:8080" },
+    { "key": "pagos", "value": "http://localhost:8081" },
+    { "key": "reservaId", "value": "" },
+    { "key": "referencia", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1 · Pagos directo (idempotencia)",
+      "description": "Se le habla directo al microservicio, sin pasar por el monolito.",
+      "item": [
+        {
+          "name": "1.1 Cobrar con llave r-demo",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Pagos responde 200', () => pm.response.to.have.status(200));",
+            "const r = pm.response.json();",
+            "pm.test('El cobro queda aprobado', () => pm.expect(r.aprobado).to.be.true);",
+            "pm.collectionVariables.set('referencia', r.referencia);",
+            "console.log('Referencia del primer cobro:', r.referencia);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "r-demo" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reservaId\": \"r-demo\",\n  \"documento\": \"1085\",\n  \"valorEnPesos\": 240000\n}" },
+            "url": { "raw": "{{pagos}}/cobros", "host": ["{{pagos}}"], "path": ["cobros"] },
+            "description": "Mira la consola de Pagos: aparece COBRANDO 240000 a 1085."
+          }
+        },
+        {
+          "name": "1.2 Reintentar con la MISMA llave",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const r = pm.response.json();",
+            "pm.test('Devuelve la misma referencia: no cobró dos veces', () =>",
+            "  pm.expect(r.referencia).to.eql(pm.collectionVariables.get('referencia')));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "r-demo" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reservaId\": \"r-demo\",\n  \"documento\": \"1085\",\n  \"valorEnPesos\": 240000\n}" },
+            "url": { "raw": "{{pagos}}/cobros", "host": ["{{pagos}}"], "path": ["cobros"] },
+            "description": "Misma referencia y en la consola de Pagos NO aparece un segundo COBRANDO."
+          }
+        },
+        {
+          "name": "1.3 Cobrar SIN llave (error del contrato)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Sin Idempotency-Key responde 400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reservaId\": \"r-demo\",\n  \"documento\": \"1085\",\n  \"valorEnPesos\": 240000\n}" },
+            "url": { "raw": "{{pagos}}/cobros", "host": ["{{pagos}}"], "path": ["cobros"] },
+            "description": "El contrato incluye los encabezados, no solo el cuerpo."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 · Monolito → Pagos (el flujo completo)",
+      "item": [
+        {
+          "name": "2.1 Crear reserva en el monolito",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Reserva creada (201)', () => pm.response.to.have.status(201));",
+            "const id = pm.response.json().reservaId;",
+            "pm.collectionVariables.set('reservaId', id);",
+            "console.log('reservaId guardado:', id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"documentoComprador\": \"1085\",\n  \"localidadId\": \"palco-6ene\",\n  \"cantidad\": 2\n}" },
+            "url": { "raw": "{{monolito}}/reservas", "host": ["{{monolito}}"], "path": ["reservas"] },
+            "description": "Guarda el reservaId en una variable para la siguiente petición."
+          }
+        },
+        {
+          "name": "2.2 Pagar la reserva (el monolito llama a Pagos)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+            "pm.test('La reserva quedó pagada', () => pm.expect(pm.response.json().pagada).to.be.true);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"valorEnPesos\": 240000\n}" },
+            "url": { "raw": "{{monolito}}/reservas/{{reservaId}}/pago", "host": ["{{monolito}}"], "path": ["reservas", "{{reservaId}}", "pago"] },
+            "description": "Mira la consola de Pagos: COBRANDO 240000 a 1085 (llave = este reservaId). El cobro lo hizo OTRO proceso."
+          }
+        },
+        {
+          "name": "2.3 Pagar otra vez la misma reserva",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('El dominio lo rechaza (422)', () => pm.response.to.have.status(422));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"valorEnPesos\": 240000\n}" },
+            "url": { "raw": "{{monolito}}/reservas/{{reservaId}}/pago", "host": ["{{monolito}}"], "path": ["reservas", "{{reservaId}}", "pago"] },
+            "description": "Pagos responde con el mismo cobro (misma llave) y el dominio dice: La reserva ya fue procesada."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 · Fallos (apaga o pon lento a Pagos antes)",
+      "item": [
+        {
+          "name": "3.1 Crear reserva nueva",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.collectionVariables.set('reservaId', pm.response.json().reservaId);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"documentoComprador\": \"1085\",\n  \"localidadId\": \"tribuna-4ene\",\n  \"cantidad\": 1\n}" },
+            "url": { "raw": "{{monolito}}/reservas", "host": ["{{monolito}}"], "path": ["reservas"] }
+          }
+        },
+        {
+          "name": "3.2 Pagar con Pagos apagado o lento → 503",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('El monolito responde 503, no se cae', () => pm.response.to.have.status(503));",
+            "pm.test('Tarda como máximo unos 2 s (el timeout)', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"valorEnPesos\": 120000\n}" },
+            "url": { "raw": "{{monolito}}/reservas/{{reservaId}}/pago", "host": ["{{monolito}}"], "path": ["reservas", "{{reservaId}}", "pago"] },
+            "description": "Antes: Ctrl+C en la terminal de Pagos, o levántalo con $env:DEMORA_MS=5000. Respuesta: Pagos no responde. Intente de nuevo: no se cobrará dos veces. Luego vuelve a levantar Pagos normal y repite esta petición: ahora sí paga."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -12,3 +12,9 @@ services:
     ports:
       - "5672:5672"     # protocolo AMQP, el que usa la aplicación
       - "15672:15672"   # consola web, usuario y clave: guest
+  pagos:
+    build: ./pagos-servicio
+    ports:
+      - "8081:8081"
+    environment:
+      DEMORA_MS: 0      # 5000 para la práctica de fallos (05.5)

@@ -31,3 +31,11 @@ spring:
   sql:
     init:
       mode: always
+---
+spring:
+  config:
+    activate:
+      on-profile: pagos-remoto
+pagos:
+  url: http://localhost:8081
+  timeout-ms: 2000          # 0 = esperar para siempre (escenario 1 de 05.5)

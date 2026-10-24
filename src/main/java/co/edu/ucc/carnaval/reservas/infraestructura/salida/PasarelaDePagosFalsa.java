@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import co.edu.ucc.carnaval.reservas.aplicacion.puertos.salida.PasarelaDePagos;
 
 @Component
-@Profile("!pagos-remoto")
+@Profile("!pagos-remoto & !pagos-grpc")
 class PasarelaDePagosFalsa implements PasarelaDePagos {
     
 @Override
